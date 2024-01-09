@@ -1,0 +1,66 @@
+@import '../../variables.css';
+
+.platform {
+    border: 1px solid var(--border);
+    margin: 10px 25px;
+    padding: 0 10px 10px 10px;
+    border-radius: 5px;
+}
+
+.platform-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.arrow {
+  font-size: 18px;
+}
+
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+.platform-content {
+  padding: 0 10px;
+}
+  
+.platform-bottom{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.billboard-right{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.billboard-id{
+  font-size: calc(4px + 2vmin);
+  margin: 10px;
+  color: var(--grey);
+}
+
+.application-table{
+  width: 100%;
+  border-collapse: collapse;
+  padding: 5px;
+  margin-bottom: 15px;
+  font-size: calc(4px + 2vmin);
+}
+
+.application-table th {
+  padding: 8px;
+  text-align: left;
+}
+
+.application-table td {
+  border-top: 2px solid var(--grey);
+  border-bottom: 2px solid var(--grey);
+  text-align: left;
+}
