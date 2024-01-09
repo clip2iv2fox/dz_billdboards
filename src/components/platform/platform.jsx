@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import "./platform.css"
 import Button from '../button/button';
 import Modal from '../modal/modal';
 import Input from '../input/input';
 import DateInput from '../input/dataInput'
+import axios from 'axios';
 
-const Platform = ({data}) => {
+const Platform = ({data, handleDeleteBillboard}) => {
   // открытие модальных окон 
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteApplication, setDeleteApplication] = useState(false);
@@ -13,6 +14,7 @@ const Platform = ({data}) => {
   const [isChangeApplication, setChangeApplication] = useState(false);
   const [isChangeBillboard, setChangeBillboard] = useState(false);
   const [isAddApplication, setAddApplication] = useState(false);
+  const [applications, setApplications] = useState([])
   const togglePlatform = () => {
     setIsOpen(!isOpen);
   };
@@ -24,20 +26,95 @@ const Platform = ({data}) => {
   const [endData, setEndData] = useState("")
   const [address, setAddress] = useState("")
 
-  const sortedApplications = [...data.applications].sort(
-    (a, b) => new Date(a.begin_data) - new Date(b.begin_data)
-  );
+  useEffect(() => {
+    getApplications()
+  }, []);
 
-  const handleDeleteBillboard = () => {
+  const getApplications = async () => {
+    try {
+        const response = await axios.get(`http://localhost:5000/api/applications/${data.id}`);
+        console.log('Успешно получены заказы:', response.data);
+        setApplications(response.data)
+    } catch (error) {
+        console.error('Ошибка:', error);
+    }
   };
 
-  const handleDeleteApplication = () => {
+  const sortedApplications = Array.isArray(applications) ? [...applications].sort(
+    (a, b) => new Date(a.begin_data) - new Date(b.begin_data)
+  ) : [];
+
+  const handleDeleteApplication = async () => {
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/applications/${data.id}/${applicationId}`)
+
+      setDeleteApplication(false)
+      setApplications(response.data);
+    } catch (error) {
+      console.error('Ошибка:', error);
+    }
   };
 
   const handleChangeBillboard = () => {
   }
 
-  const createApplication = () => {
+  const createApplication = async () => {
+    try {
+        const response = await axios.post('http://localhost:5000/api/applications', {
+          name: customer,
+          begin_data: beginData,
+          end_data: endData,
+          billboardId: data.id,
+        });
+        setAddApplication(false)
+        console.log('Успешно создан заказ:', response.data);
+        setApplications(response.data)
+
+    } catch (error) {
+        console.error('Ошибка:', error);
+    }
+  }
+
+  const table = () => {
+    return(
+    <table className='application-table'>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>заказчик</th>
+          <th>начало</th>
+          <th>конец</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedApplications.map((application) => (
+          <tr key={application.id}>
+            <td>{application.id}</td>
+            <td>{application.name}</td>
+            <td>{application.begin_data}</td>
+            <td>{application.end_data}</td>
+            <td>
+              <Button onClick={() => (
+                setChangeApplication(true),
+                setApplicationId(application.id),
+                setBeginData(application.begin_data),
+                setEndData(application.end_data)
+              )}>
+                <i className="fa fa-edit" style={{color: "white"}}></i>
+              </Button>
+              <Button onClick={() => (
+                setDeleteApplication(true),
+                setApplicationId(application.id)
+              )} type={"danger"}>
+                <i className="fa fa-remove" style={{color: "white"}}></i>
+              </Button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    )
   }
 
   return (
@@ -51,43 +128,13 @@ const Platform = ({data}) => {
       </div>
       {isOpen && (
         <div className="platform-content">
-          <table className='application-table'>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>заказчик</th>
-                <th>начало</th>
-                <th>конец</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedApplications.map((application) => (
-                <tr key={application.id}>
-                  <td>{application.id}</td>
-                  <td>{application.name}</td>
-                  <td>{application.begin_data}</td>
-                  <td>{application.end_data}</td>
-                  <td>
-                    <Button onClick={() => (
-                      setChangeApplication(true),
-                      setApplicationId(application.id),
-                      setBeginData(application.begin_data),
-                      setEndData(application.end_data)
-                    )}>
-                      <i class="fa fa-edit" style={{color: "white"}}></i>
-                    </Button> 
-                    <Button onClick={() => (
-                      setDeleteApplication(true),
-                      setApplicationId(application.id)
-                    )} type={"danger"}>
-                      <i class="fa fa-remove" style={{color: "white"}}></i>
-                    </Button>      
-                  </td>
-                </tr>
-              ))}    
-            </tbody>
-          </table>
+          {
+            sortedApplications.length === 0 ? (
+              <div className='no-applications'>ЗАКАЗОВ НЕТ</div>
+            ) : (
+              table()
+            )
+          }
           <div className="platform-bottom">
             <div>
               <Button onClick={() => (setChangeBillboard(true))} type={"default"}>редактировать билборд</Button>
@@ -99,7 +146,7 @@ const Platform = ({data}) => {
             <div>это повлечёт удаление его данных и данных заказа</div>
             <div className="platform-bottom">
               <Button onClick={() => setDeleteBillboard(false)}>отмена</Button>
-              <Button onClick={() => handleDeleteBillboard()} type={"danger"}>удалить</Button>
+              <Button onClick={() => (handleDeleteBillboard(data.id), setDeleteBillboard(false))} type={"danger"}>удалить</Button>
             </div>
           </Modal>
           <Modal isOpen={isDeleteApplication} onClose={() => setDeleteApplication(false)} title={"Вы уверены, что хотите удалить заказ?"}>

@@ -5,38 +5,57 @@ import Header from './components/header/header';
 import Platform from './components/platform/platform';
 import Modal from './components/modal/modal';
 import Input from './components/input/input';
+import axios from 'axios';
 
 function App() {
   const [isModalOpen, setModalOpen] = useState(false);
   const [newAddres, setNewAddres] = useState("")
-  const [data, setData] = useState([
-    {
-      id: "billboard-1",
-      address: "Ленинский проспект 39/1",
-      applications: [
-        {
-          id: "application-1",
-          name: "Аквариус",
-          begin_data: "10",
-          end_data: "12",
-        }
-      ]
+  const [data, setData] = useState([])
+
+  const getData = async () => {
+    try {
+        const response = await axios.get('http://localhost:5000/api/billboards');
+        console.log('Успешно получены билборды:', response.data);
+        setData(response.data)
+    } catch (error) {
+        console.error('Ошибка:', error);
     }
-  ])
+  };
 
   useEffect(() => {
-    
+    getData()
   }, []);
 
-  const handleCreateBillboard = () => {
+  const handleCreateBillboard = async () => {
     setModalOpen(false);
+    try {
+      const response = await axios.post('http://localhost:5000/api/billboards', {
+        address: newAddres,
+        min: 10,
+        max: 20,
+      });
+
+      setData(response.data);
+    } catch (error) {
+      console.error('Ошибка:', error);
+    }
+  };
+
+  const handleDeleteBillboard = async (id) => {
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/billboards/${id}`)
+
+      setData(response.data);
+    } catch (error) {
+      console.error('Ошибка:', error);
+    }
   };
 
   return (
     <div className="App">
       <Header/>
-      {data.map((billboard)=>
-        <Platform data={billboard}/>
+      {data.map((billboard)=> 
+        <Platform data={billboard} handleDeleteBillboard={(id) => handleDeleteBillboard(id)}/>
       )}
       <div className='billboard-button'>
         <Button onClick={() => setModalOpen(true)}>+ билборд</Button>

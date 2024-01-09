@@ -64,3 +64,15 @@
   border-bottom: 2px solid var(--grey);
   text-align: left;
 }
+
+.no-applications{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  color: var(--grey);
+  padding: 10px;
+  font-size: calc(6px + 2vmin);
+  border-top: 2px solid var(--grey);
+  border-bottom: 2px solid var(--grey);
+}
