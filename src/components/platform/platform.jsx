@@ -77,7 +77,7 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
         const response = await axios.put(`http://localhost:5000/api/billboards/${data.id}`, {
           address: address
         });
-        
+
         setAddress("")
         setChangeBillboard(false)
 
@@ -96,10 +96,10 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
         end_data: endData,
         billboardId: billboardId
       });
-      
+
       setAddress("")
       setChangeApplication(false)
-      setApplications(response.data)
+      getApplications()
       reloadBillboards()
     } catch (error) {
       setNotification('Ошибка сервера', error)
