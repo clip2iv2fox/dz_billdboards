@@ -1,0 +1,20 @@
+@import '../../variables.css';
+
+.custom-select {
+    padding: 10px 15px;
+    margin: 10px;
+    font-size: 16px;
+    border: 1px solid var(--grey);
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+
+.custom-select:hover {
+    border-color: var(--grey);
+}
+
+.custom-select:focus {
+    border-color: var(--border);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
