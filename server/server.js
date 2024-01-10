@@ -74,7 +74,7 @@ app.post('/api/billboards', async (req, res) => {
             min: min || 1,
             max: max || 10,
         });
-
+        
         const allBillboards = await Billboard.findAll();
         res.json(allBillboards);
     } catch (error) {
@@ -105,7 +105,7 @@ app.delete('/api/billboards/:billboardId', async (req, res) => {
         }
 
         // Удаляем билборд
-        await billboardToDelete.destroy();
+        await billboardToDelete.destroy({ include: Application });
 
         // Получаем все Billboard из базы данных после удаления
         const allBillboards = await Billboard.findAll();
@@ -115,6 +115,31 @@ app.delete('/api/billboards/:billboardId', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Ошибка удаления билборда' });
+    }
+});
+
+app.put('/api/billboards/:billboardId', async (req, res) => {
+    try {
+        const billboardId = req.params.billboardId;
+        const { address } = req.body;
+
+        // Проверяем, существует ли билборд с указанным ID
+        const billboardToUpdate = await Billboard.findByPk(billboardId);
+
+        if (!billboardToUpdate) {
+            return res.status(404).json({ error: 'Билборд не найден' });
+        }
+
+        // Обновляем поле address билборда
+        await billboardToUpdate.update({ address });
+
+        // Получаем обновленный билборд
+        const updatedBillboard = await Billboard.findByPk(billboardId);
+
+        res.json(updatedBillboard);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Ошибка обновления билборда' });
     }
 });
 
@@ -185,6 +210,44 @@ app.delete('/api/applications/:billboardId/:applicationId', async (req, res) => 
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Ошибка удаления заявки' });
+    }
+});
+
+app.put('/api/applications/:applicationId', async (req, res) => {
+    try {
+        const applicationId = req.params.applicationId;
+        const { name, begin_data, end_data, billboardId } = req.body;
+
+        // Поиск билборда по адресу
+        const billboard = await Billboard.findByPk(billboardId);
+
+        if (!billboard) {
+            return res.status(404).json({ error: 'Билборд не найден' });
+        }
+
+        // Обновляем поля заказа
+        const applicationToUpdate = await Application.findByPk(applicationId);
+
+        if (!applicationToUpdate) {
+            return res.status(404).json({ error: 'Заказ не найден' });
+        }
+
+        await applicationToUpdate.update({
+            name: name,
+            begin_data: begin_data,
+            end_data: end_data,
+            billboardId: billboardId,
+        });
+
+        // Получаем обновленный заказ
+        const applicationsForBillboard = await Application.findAll({
+            where: { billboardId },
+        });
+
+        res.json(applicationsForBillboard);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Ошибка обновления заказа' });
     }
 });
 
