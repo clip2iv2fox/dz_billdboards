@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 import "./input.css"
 
-const Input = ({placeholder, input}) => {
+const NumInput = ({placeholder, input, min = 1, max}) => {
     const [inputValue, setInputValue] = useState('');
 
     const handleChange = (event) => {
@@ -11,8 +11,10 @@ const Input = ({placeholder, input}) => {
 
     return (
         <input
-            type="text"
+            type="number"
             id="input"
+            min={min}
+            max={max}
             value={inputValue}
             onChange={handleChange}
             placeholder={placeholder}
@@ -20,4 +22,4 @@ const Input = ({placeholder, input}) => {
     );
 };
 
-export default Input;
+export default NumInput

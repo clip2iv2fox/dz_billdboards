@@ -5,8 +5,10 @@ import Modal from '../modal/modal';
 import Input from '../input/input';
 import DateInput from '../input/dataInput'
 import axios from 'axios';
+import NumInput from '../input/numInput';
+import Select from '../select/select';
 
-const Platform = ({data, handleDeleteBillboard}) => {
+const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) => {
   // открытие модальных окон 
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteApplication, setDeleteApplication] = useState(false);
@@ -21,14 +23,30 @@ const Platform = ({data, handleDeleteBillboard}) => {
 
   // общие данные
   const [applicationId, setApplicationId] = useState("")
+  const [billboardId, setBillboardId] = useState("")
   const [customer, setCustomer] = useState("")
   const [beginData, setBeginData] = useState("")
   const [endData, setEndData] = useState("")
   const [address, setAddress] = useState("")
+  const [notification, setNotification] = useState("")
+
+  const sortedApplications = Array.isArray(applications) ? [...applications].sort(
+    (a, b) => new Date(a.begin_data) - new Date(b.begin_data)
+  ) : [];
 
   useEffect(() => {
     getApplications()
   }, []);
+
+  useEffect(() => {
+    setNotification("")
+  }, [
+    isDeleteApplication,
+    isDeleteBillboard,
+    isChangeApplication,
+    isChangeBillboard,
+    isAddApplication,
+  ]);
 
   const getApplications = async () => {
     try {
@@ -36,13 +54,9 @@ const Platform = ({data, handleDeleteBillboard}) => {
         console.log('Успешно получены заказы:', response.data);
         setApplications(response.data)
     } catch (error) {
-        console.error('Ошибка:', error);
+      setNotification('Ошибка сервера', error);
     }
   };
-
-  const sortedApplications = Array.isArray(applications) ? [...applications].sort(
-    (a, b) => new Date(a.begin_data) - new Date(b.begin_data)
-  ) : [];
 
   const handleDeleteApplication = async () => {
     try {
@@ -51,27 +65,68 @@ const Platform = ({data, handleDeleteBillboard}) => {
       setDeleteApplication(false)
       setApplications(response.data);
     } catch (error) {
-      console.error('Ошибка:', error);
+      setNotification('Ошибка сервера', error);
     }
   };
 
-  const handleChangeBillboard = () => {
+  const handleChangeBillboard = async () => {
+    if (address == "") {
+      setNotification("Введены не все данные.")
+    } else {
+      try {
+        const response = await axios.put(`http://localhost:5000/api/billboards/${data.id}`, {
+          address: address
+        });
+        
+        setAddress("")
+        setChangeBillboard(false)
+
+        reloadBillboards()
+      } catch (error) {
+        setNotification('Ошибка сервера', error)
+      }
+    }
+  }
+
+  const handleChangeApplication = async () => {
+    try {
+      const response = await axios.put(`http://localhost:5000/api/applications/${applicationId}`, {
+        name: customer,
+        begin_data: beginData,
+        end_data: endData,
+        billboardId: billboardId
+      });
+      
+      setAddress("")
+      setChangeApplication(false)
+      setApplications(response.data)
+      reloadBillboards()
+    } catch (error) {
+      setNotification('Ошибка сервера', error)
+    }
   }
 
   const createApplication = async () => {
-    try {
-        const response = await axios.post('http://localhost:5000/api/applications', {
-          name: customer,
-          begin_data: beginData,
-          end_data: endData,
-          billboardId: data.id,
-        });
-        setAddApplication(false)
-        console.log('Успешно создан заказ:', response.data);
-        setApplications(response.data)
-
-    } catch (error) {
-        console.error('Ошибка:', error);
+    if (customer == "" || beginData == "" || endData == "") {
+      setNotification("Введены не все данные.")
+    } else {
+      try {
+          const response = await axios.post('http://localhost:5000/api/applications', {
+            name: customer,
+            begin_data: beginData,
+            end_data: endData,
+            billboardId: data.id,
+          });
+          setAddApplication(false)
+          console.log('Успешно создан заказ:', response.data);
+          setAddApplication(false)
+          setCustomer("")
+          setBeginData("")
+          setEndData("")
+          setApplications(response.data)
+      } catch (error) {
+        setNotification('Ошибка сервера', error)
+      }
     }
   }
 
@@ -98,8 +153,10 @@ const Platform = ({data, handleDeleteBillboard}) => {
               <Button onClick={() => (
                 setChangeApplication(true),
                 setApplicationId(application.id),
+                setCustomer(application.name),
                 setBeginData(application.begin_data),
-                setEndData(application.end_data)
+                setEndData(application.end_data),
+                setBillboardId(data.id)
               )}>
                 <i className="fa fa-edit" style={{color: "white"}}></i>
               </Button>
@@ -120,7 +177,10 @@ const Platform = ({data, handleDeleteBillboard}) => {
   return (
     <div className="platform">
       <div className={`platform-header ${isOpen ? 'open' : ''}`} onClick={togglePlatform}>
-        <h3>{data.address}</h3>
+        <h3>
+          {data.address}
+          <div className="billboard-id">min-max: {data.min} - {data.max}</div>
+        </h3>
         <div className='billboard-right'>
           <div className="billboard-id">ID: {data.id}</div>
           <span className={`arrow ${isOpen ? 'open' : ''}`}>&#9660;</span>
@@ -146,6 +206,7 @@ const Platform = ({data, handleDeleteBillboard}) => {
             <div>это повлечёт удаление его данных и данных заказа</div>
             <div className="platform-bottom">
               <Button onClick={() => setDeleteBillboard(false)}>отмена</Button>
+              <div className='notification'>{notification}</div>
               <Button onClick={() => (handleDeleteBillboard(data.id), setDeleteBillboard(false))} type={"danger"}>удалить</Button>
             </div>
           </Modal>
@@ -153,14 +214,19 @@ const Platform = ({data, handleDeleteBillboard}) => {
             <div>это повлечёт удаление всех его данных</div>
             <div className="platform-bottom">
               <Button onClick={() => setDeleteApplication(false)}>отмена</Button>
+              <div className='notification'>{notification}</div>
               <Button onClick={() => handleDeleteApplication()} type={"danger"}>удалить</Button>
             </div>
           </Modal>
-          <Modal isOpen={isChangeApplication} onClose={() => setChangeApplication(false)} title={"Редактирование заказа"}>
+          <Modal isOpen={isChangeApplication} onClose={() => (setChangeApplication(false), setCustomer(""), setBeginData(""), setEndData(""))} title={"Редактирование заказа"}>
             <div className="platform-bottom">  
               <div>
                 Заказчик: 
-                <Input input={(value) => setCustomer(value)} placeholder="ввод..."/>
+                <Input input={(value) => setCustomer(value)} placeholder={customer}/>
+              </div>
+              <div>
+                Билборд: 
+                <Select options={billboards} onSelect={(value) => setBillboardId(value)} placeholder={data.address}/>
               </div>
             </div>
             <div className="platform-bottom">  
@@ -169,30 +235,31 @@ const Platform = ({data, handleDeleteBillboard}) => {
               </div>
               <div>
                 начало
-                <DateInput input={(value) => setBeginData(value)}/>
+                <DateInput input={(value) => setBeginData(value)} placeholder={beginData}/>
               </div>
               <div>
                 -
               </div>
               <div>
                 конец
-                <DateInput input={(value) => setEndData(value)}/>
+                <DateInput input={(value) => setEndData(value)} placeholder={endData}/>
               </div>
             </div>
             <div className="platform-bottom">
-              <Button onClick={() => setAddApplication(false)} type={"default"}>отмена</Button>
-              <Button onClick={() => createApplication()}>подтвердить</Button>
+              <div className='notification'>{notification}</div>
+              <Button onClick={() => handleChangeApplication()}>подтвердить</Button>
             </div>
           </Modal>
-          <Modal isOpen={isChangeBillboard} onClose={() => setChangeBillboard(false)} title={"Редактирование билборда"}>
+          <Modal isOpen={isChangeBillboard} onClose={() => (setChangeBillboard(false), setAddress(""))} title={"Редактирование билборда"}>
             <div className="platform-bottom">  
               <div>
                 Адрес: <Input input={(value) => setAddress(value)} placeholder={data.address}/>
               </div>
-              <Button onClick={() => handleChangeBillboard()}>подтвердить</Button>
+              <div className='notification'>{notification}</div>
+              <Button onClick={() => (handleChangeBillboard())}>подтвердить</Button>
             </div>
           </Modal>
-          <Modal isOpen={isAddApplication} onClose={() => setAddApplication(false)} title={"Создание заказа"}>
+          <Modal isOpen={isAddApplication} onClose={() => (setAddApplication(false), setCustomer(""), setBeginData(""), setEndData(""))} title={"Создание заказа"}>
             <div className="platform-bottom">  
               <div>
                 Заказчик: 
@@ -216,7 +283,8 @@ const Platform = ({data, handleDeleteBillboard}) => {
               </div>
             </div>
             <div className="platform-bottom">
-              <Button onClick={() => setAddApplication(false)} type={"default"}>отмена</Button>
+              <Button onClick={() => (setAddApplication(false), setCustomer(""), setBeginData(""), setEndData(""))} type={"default"}>отмена</Button>
+              <div className='notification'>{notification}</div>
               <Button onClick={() => createApplication()}>подтвердить</Button>
             </div>
           </Modal>

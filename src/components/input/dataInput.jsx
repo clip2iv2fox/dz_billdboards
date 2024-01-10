@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const DateInput = ({placeholder, input}) => {
-    const [selectedDate, setSelectedDate] = useState('');
+    const [selectedDate, setSelectedDate] = useState(placeholder);
 
     const handleDateChange = (event) => {
         setSelectedDate(event.target.value);

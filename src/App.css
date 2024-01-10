@@ -13,3 +13,7 @@
 .billboard-button{
   margin-left: 56px;
 }
+
+.notification{
+  color: var(--accent);
+}

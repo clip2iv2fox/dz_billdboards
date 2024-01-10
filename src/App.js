@@ -5,12 +5,16 @@ import Header from './components/header/header';
 import Platform from './components/platform/platform';
 import Modal from './components/modal/modal';
 import Input from './components/input/input';
+import NumInput from './components/input/numInput';
 import axios from 'axios';
 
 function App() {
   const [isModalOpen, setModalOpen] = useState(false);
   const [newAddres, setNewAddres] = useState("")
   const [data, setData] = useState([])
+  const [min, setMin] = useState("")
+  const [max, setMax] = useState("")
+  const [notification, setNotification] = useState("")
 
   const getData = async () => {
     try {
@@ -27,17 +31,26 @@ function App() {
   }, []);
 
   const handleCreateBillboard = async () => {
-    setModalOpen(false);
-    try {
-      const response = await axios.post('http://localhost:5000/api/billboards', {
-        address: newAddres,
-        min: 10,
-        max: 20,
-      });
+    if (newAddres == "" || min == "" || max == "") {
+      setNotification("Введены не все данные.")
+    } else {
+      try {
+        const response = await axios.post('http://localhost:5000/api/billboards', {
+          address: newAddres,
+          min: min,
+          max: max,
+        });
 
-      setData(response.data);
-    } catch (error) {
-      console.error('Ошибка:', error);
+        setData(response.data);
+        setNotification("")
+        setNewAddres("")
+        setMin("")
+        setMax("")
+        setModalOpen(false);
+      } catch (error) {
+        console.error('Ошибка:', error);
+        setNotification('Ошибка:', error)
+      }
     }
   };
 
@@ -51,24 +64,41 @@ function App() {
     }
   };
 
+  const modalClose = () => {
+    setModalOpen(false)
+    setNotification("")
+    setNewAddres("")
+    setMin("")
+    setMax("")
+  }
+
   return (
     <div className="App">
       <Header/>
       {data.map((billboard)=> 
-        <Platform data={billboard} handleDeleteBillboard={(id) => handleDeleteBillboard(id)}/>
+        <Platform data={billboard} billboards={data} handleDeleteBillboard={(id) => handleDeleteBillboard(id)} reloadBillboards={() => getData()}/>
       )}
       <div className='billboard-button'>
         <Button onClick={() => setModalOpen(true)}>+ билборд</Button>
       </div>
-      <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={"Создание билборда"}>
-        <div className="platform-bottom">  
+      <Modal isOpen={isModalOpen} onClose={() => modalClose(false)} title={"Создание билборда"}>
+        <div className="platform-bottom">
           <div>
             Адрес: 
             <Input input={(value) => setNewAddres(value)} placeholder="ввод..."/>
           </div>
+          <div>
+            min: 
+            <NumInput input={(value) => setMin(value)} max={max - 1} placeholder="ввод..."/>
+          </div>
+          <div>
+            max: 
+            <NumInput input={(value) => setMax(value)} min={min} placeholder="ввод..."/>
+          </div>
         </div>
         <div className="platform-bottom">
-          <Button onClick={() => setModalOpen(false)} type={"default"}>отмена</Button>
+          <Button onClick={() => modalClose()} type={"default"}>отмена</Button>
+          <div className='notification'>{notification}</div>
           <Button onClick={() => handleCreateBillboard()}>подтвердить</Button>
         </div>
       </Modal>
