@@ -8,7 +8,7 @@ import axios from 'axios';
 import NumInput from '../input/numInput';
 import Select from '../select/select';
 
-const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) => {
+const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards, reload, handleReload}) => {
   // открытие модальных окон 
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteApplication, setDeleteApplication] = useState(false);
@@ -36,7 +36,7 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
 
   useEffect(() => {
     getApplications()
-  }, []);
+  }, [reload]);
 
   useEffect(() => {
     setNotification("")
@@ -54,7 +54,11 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
         console.log('Успешно получены заказы:', response.data);
         setApplications(response.data)
     } catch (error) {
-      setNotification('Ошибка сервера', error);
+      if (error.response && error.response.data && error.response.data.error) {
+          setNotification(error.response.data.error);
+        } else {
+          setNotification('Ошибка сервера');
+        };
     }
   };
 
@@ -65,7 +69,11 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
       setDeleteApplication(false)
       setApplications(response.data);
     } catch (error) {
-      setNotification('Ошибка сервера', error);
+      if (error.response && error.response.data && error.response.data.error) {
+          setNotification(error.response.data.error);
+        } else {
+          setNotification('Ошибка сервера');
+        };
     }
   };
 
@@ -83,7 +91,11 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
 
         reloadBillboards()
       } catch (error) {
-        setNotification('Ошибка сервера', error)
+        if (error.response && error.response.data && error.response.data.error) {
+          setNotification(error.response.data.error);
+        } else {
+          setNotification('Ошибка сервера');
+        }
       }
     }
   }
@@ -99,10 +111,15 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
 
       setAddress("")
       setChangeApplication(false)
+      handleReload()
       getApplications()
       reloadBillboards()
     } catch (error) {
-      setNotification('Ошибка сервера', error)
+      if (error.response && error.response.data && error.response.data.error) {
+          setNotification(error.response.data.error);
+        } else {
+          setNotification('Ошибка сервера');
+        }
     }
   }
 
@@ -117,15 +134,19 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
             end_data: endData,
             billboardId: data.id,
           });
-          setAddApplication(false)
+
           console.log('Успешно создан заказ:', response.data);
           setAddApplication(false)
           setCustomer("")
           setBeginData("")
           setEndData("")
-          setApplications(response.data)
+          getApplications()
       } catch (error) {
-        setNotification('Ошибка сервера', error)
+        if (error.response && error.response.data && error.response.data.error) {
+          setNotification(error.response.data.error);
+        } else {
+          setNotification('Ошибка сервера');
+        }
       }
     }
   }
@@ -145,7 +166,7 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
       <tbody>
         {sortedApplications.map((application) => (
           <tr key={application.id}>
-            <td>{application.id}</td>
+            <td><div className="billboard-id">{application.id}</div></td>
             <td>{application.name}</td>
             <td>{application.begin_data}</td>
             <td>{application.end_data}</td>
@@ -242,7 +263,7 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
               </div>
               <div>
                 конец
-                <DateInput input={(value) => setEndData(value)} placeholder={endData}/>
+                <DateInput input={(value) => setEndData(value)} placeholder={endData} min={beginData}/>
               </div>
             </div>
             <div className="platform-bottom">
@@ -279,7 +300,7 @@ const Platform = ({data, billboards, handleDeleteBillboard, reloadBillboards}) =
               </div>
               <div>
                 конец
-                <DateInput input={(value) => setEndData(value)}/>
+                <DateInput input={(value) => setEndData(value)} min={beginData}/>
               </div>
             </div>
             <div className="platform-bottom">

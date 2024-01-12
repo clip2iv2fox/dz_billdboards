@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 
-const DateInput = ({placeholder, input}) => {
+const DateInput = ({ placeholder, input, min = null }) => {
+    const today = new Date().toISOString().split('T')[0];
     const [selectedDate, setSelectedDate] = useState(placeholder);
 
     const handleDateChange = (event) => {
         setSelectedDate(event.target.value);
-        input(event.target.value)
+        input(event.target.value);
     };
 
     return (
@@ -14,6 +15,7 @@ const DateInput = ({placeholder, input}) => {
             id="dateInput"
             value={selectedDate}
             onChange={handleDateChange}
+            min={min ? min : today}
         />
     );
 };

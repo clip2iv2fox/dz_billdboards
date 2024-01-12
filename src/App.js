@@ -15,6 +15,7 @@ function App() {
   const [min, setMin] = useState("")
   const [max, setMax] = useState("")
   const [notification, setNotification] = useState("")
+  const [reloadApplications, setReloadApplications] = useState(true)
 
   const getData = async () => {
     try {
@@ -22,7 +23,7 @@ function App() {
         console.log('Успешно получены билборды:', response.data);
         setData(response.data)
     } catch (error) {
-        console.error('Ошибка:', error);
+        console.error('Ошибка:' + error);
     }
   };
 
@@ -48,8 +49,8 @@ function App() {
         setMax("")
         setModalOpen(false);
       } catch (error) {
-        console.error('Ошибка:', error);
-        setNotification('Ошибка:', error)
+        console.error('Ошибка:' + error);
+        setNotification('Ошибка:' + error)
       }
     }
   };
@@ -60,7 +61,7 @@ function App() {
 
       setData(response.data);
     } catch (error) {
-      console.error('Ошибка:', error);
+      console.error('Ошибка:' + error);
     }
   };
 
@@ -76,7 +77,14 @@ function App() {
     <div className="App">
       <Header/>
       {data.map((billboard)=> 
-        <Platform data={billboard} billboards={data} handleDeleteBillboard={(id) => handleDeleteBillboard(id)} reloadBillboards={() => getData()}/>
+        <Platform 
+          data={billboard}
+          billboards={data}
+          handleDeleteBillboard={(id) => handleDeleteBillboard(id)}
+          reloadBillboards={() => getData()}
+          reload = {reloadApplications}
+          handleReload = {() => setReloadApplications(!reloadApplications)}
+        />
       )}
       <div className='billboard-button'>
         <Button onClick={() => setModalOpen(true)}>+ билборд</Button>

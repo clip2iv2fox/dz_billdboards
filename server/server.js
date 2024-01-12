@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize, DataTypes, Op } = require('sequelize');
 
 const app = express();
 const port = 5000;
@@ -57,8 +57,15 @@ const Application = sequelize.define('Application', {
 });
 
 // Определение ассоциаций
-Billboard.hasMany(Application, { foreignKey: 'billboardId' });
-Application.belongsTo(Billboard, { foreignKey: 'billboardId' });
+Billboard.hasMany(Application, {
+    foreignKey: 'billboardId',
+    onDelete: 'CASCADE',
+});
+Application.belongsTo(Billboard, {
+    foreignKey: 'billboardId',
+    onDelete: 'CASCADE',
+});
+
 
 // Создать таблицы, если их нет
 Billboard.sync();
@@ -171,18 +178,71 @@ app.post('/api/applications', async (req, res) => {
     try {
         const { name, begin_data, end_data, billboardId } = req.body;
 
-        Application.create({
+        // Поиск билборда по адресу
+        const billboard = await Billboard.findByPk(billboardId);
+
+        if (!billboard) {
+            return res.status(404).json({ error: 'Билборд не найден' });
+        }
+
+        const minDays = billboard.min;
+        const maxDays = billboard.max;
+
+        const beginDate = new Date(begin_data);
+        const endDate = new Date(end_data);
+
+        const daysDifference = Math.floor((endDate - beginDate) / (24 * 60 * 60 * 1000)) + 1;
+
+        if (daysDifference < minDays || daysDifference > maxDays) {
+            return res.status(400).json({ error: `Количество дней должно быть от ${minDays} до ${maxDays}` });
+        }
+
+        // Проверка на пересечение существующих заказов
+        const existingApplications = await Application.findAll({
+            where: {
+                billboardId,
+                [Op.or]: [
+                    {
+                        begin_data: {
+                            [Op.between]: [begin_data, end_data],
+                        },
+                    },
+                    {
+                        end_data: {
+                            [Op.between]: [begin_data, end_data],
+                        },
+                    },
+                    {
+                        [Op.and]: [
+                            {
+                                begin_data: {
+                                    [Op.lte]: begin_data,
+                                },
+                            },
+                            {
+                                end_data: {
+                                    [Op.gte]: end_data,
+                                },
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        if (existingApplications.length > 0) {
+            return res.status(400).json({ error: 'Даты заказов пересекаются' });
+        }
+
+        // Если нет пересечений, создаем заказ
+        const newApplication = await Application.create({
             name: name,
             begin_data: begin_data,
             end_data: end_data,
             billboardId: billboardId,
         });
 
-        const applicationsForBillboard = await Application.findAll({
-            where: { billboardId },
-        });
-
-        res.json(applicationsForBillboard);
+        res.json(newApplication);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Ошибка создания заявки' });
@@ -225,7 +285,58 @@ app.put('/api/applications/:applicationId', async (req, res) => {
             return res.status(404).json({ error: 'Билборд не найден' });
         }
 
-        // Обновляем поля заказа
+        const minDays = billboard.min;
+        const maxDays = billboard.max;
+
+        const beginDate = new Date(begin_data);
+        const endDate = new Date(end_data);
+
+        const daysDifference = Math.floor((endDate - beginDate) / (24 * 60 * 60 * 1000)) + 1;
+
+        if (daysDifference < minDays || daysDifference > maxDays) {
+            return res.status(400).json({ error: `Количество дней должно быть от ${minDays} до ${maxDays}` });
+        }
+
+        // Проверка на пересечение существующих заказов
+        const existingApplications = await Application.findAll({
+            where: {
+                billboardId,
+                [Op.or]: [
+                    {
+                        begin_data: {
+                            [Op.between]: [begin_data, end_data],
+                        },
+                    },
+                    {
+                        end_data: {
+                            [Op.between]: [begin_data, end_data],
+                        },
+                    },
+                    {
+                        [Op.and]: [
+                            {
+                                begin_data: {
+                                    [Op.lte]: begin_data,
+                                },
+                            },
+                            {
+                                end_data: {
+                                    [Op.gte]: end_data,
+                                },
+                            },
+                        ],
+                    },
+                ],
+                id: {
+                    [Op.ne]: applicationId,
+                },
+            },
+        });
+
+        if (existingApplications.length > 0) {
+            return res.status(400).json({ error: 'Даты заказов пересекаются' });
+        }
+
         const applicationToUpdate = await Application.findByPk(applicationId);
 
         if (!applicationToUpdate) {
@@ -239,7 +350,6 @@ app.put('/api/applications/:applicationId', async (req, res) => {
             billboardId: billboardId,
         });
 
-        // Получаем обновленный заказ
         const applicationsForBillboard = await Application.findAll({
             where: { billboardId },
         });
