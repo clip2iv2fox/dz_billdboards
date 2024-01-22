@@ -97,7 +97,7 @@ function App() {
           </div>
           <div>
             min: 
-            <NumInput input={(value) => setMin(value)} max={max - 1} placeholder="ввод..."/>
+            <NumInput input={(value) => setMin(value)} min={1} max={max} placeholder="ввод..."/>
           </div>
           <div>
             max: 
